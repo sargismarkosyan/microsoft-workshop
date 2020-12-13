@@ -8,4 +8,3 @@ function startGame(board) {
     //@TODO add obsticales
     //@TODO add score counter
 }
-
