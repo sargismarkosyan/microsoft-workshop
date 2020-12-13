@@ -2,12 +2,15 @@ const playerSize = 30
 const obsticaleSpaceMin = playerSize + 25
 const obsticaleSpaceMax = playerSize + 75
 const playerHorizontalSpeed = 0.1 // Հեռավորթյունը որը կարող է անցնել 1 միլիվարկյանում
+const gravity = 0.0025 // Հեռավորթյունը որը կարող է անցնել 1 միլիվարկյանում
 const spaceBetweenObstacles = 150
 const obstacleWidth = 15
+const playerStartingX = 20
+const boostImpuls = 1
 
 document.addEventListener('DOMContentLoaded', (event) => {
     const gameBoard = document.getElementById('game-board')
-    const game = new Game(gameBoard, playerHorizontalSpeed, spaceBetweenObstacles)
+    const game = new Game(gameBoard, gravity, playerHorizontalSpeed, spaceBetweenObstacles)
     game.start()
 })
 
@@ -15,13 +18,14 @@ function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-function Game(board, horizontalSpeed, spaceBetweenObstacles) {
+function Game(board, gravity, horizontalSpeed, spaceBetweenObstacles) {
     this.width = board.width
     this.height = board.height
+    this.gravity = gravity
     this.horizontalSpeed = horizontalSpeed
     this.spaceBetweenObstacles = spaceBetweenObstacles
     this.context = board.getContext('2d')
-    this.player = new Player(playerSize)
+    this.player = new Player(playerSize, this.height)
     this.isEnded = false
     this.animationStartTime = 0
 
@@ -31,6 +35,12 @@ function Game(board, horizontalSpeed, spaceBetweenObstacles) {
         obsticale.setX(this.width + i)
         this.obsticales.push(obsticale)
     }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === ' ') {
+            this.player.boostUp()
+        }
+    });
 }
 
 Game.prototype.start = function() {
@@ -51,6 +61,10 @@ Game.prototype.step = function(timestamp) {
     }
 
     this.context.clearRect(0, 0, this.width, this.height);
+
+    const playerDisatance = this.gravity * (timestamp - this.animationStartTime)
+    this.player.addImpuls(playerDisatance)
+    this.player.updateCords()
     this.player.render(this.context)
 
     const obsticaleDisatance = this.horizontalSpeed * (timestamp - this.animationStartTime)
@@ -68,10 +82,27 @@ Game.prototype.step = function(timestamp) {
     window.requestAnimationFrame(this.step.bind(this))
 }
 
-function Player(size) {
+function Player(size, height) {
     this.playerSize = size
-    this.x = 0
+    this.x = playerStartingX
     this.y = 0
+    this.height = height
+    this.impuls = 0
+}
+
+Player.prototype.boostUp = function() {
+    this.impuls = Math.min(0, this.impuls) - boostImpuls
+}
+
+Player.prototype.addImpuls = function(change) {
+    this.impuls += change
+}
+
+Player.prototype.updateCords = function(change) {
+    this.y = Math.max(0, Math.min(this.height - this.playerSize, this.y + this.impuls))
+    if (this.y === 0) {
+        this.impuls = 0
+    }
 }
 
 Player.prototype.render = function(context) {
